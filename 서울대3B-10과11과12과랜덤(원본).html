@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>서울대 한국어 3B – 10·11·12과 단어 카드게임</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f5f7fb;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .game-container {
+      background: #ffffff;
+      padding: 24px 28px;
+      border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      max-width: 760px;
+      width: 100%;
+    }
+    h1 {
+      font-size: 1.3rem;
+      margin-top: 0;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+    .subtitle {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #666;
+      margin-bottom: 14px;
+    }
+    .top-controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 0.9rem;
+    }
+    .direction {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .direction span.label {
+      font-size: 0.85rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+    }
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      color: #444;
+      margin-bottom: 15px;
+    }
+    .card {
+      background: #f0f4ff;
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    .question-text {
+      font-size: 1.2rem;
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 4px;
+      color: #333;
+      word-break: keep-all;
+    }
+    .lang-label {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #6b7280;
+      margin-bottom: 6px;
+    }
+    #options {
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .option-btn {
+      flex: 1 1 calc(50% - 8px);
+      padding: 10px 16px;
+      border-radius: 12px;
+      border: 1px solid #d1d5db;
+      background: white;
+      cursor: pointer;
+      text-align: center;
+      margin-bottom: 4px;
+      transition: 0.2s;
+      font-size: 0.95rem;
+      word-break: keep-all;
+    }
+    .option-btn.correct {
+      background: #dcfce7;
+      border-color: #22c55e;
+    }
+    .option-btn.wrong {
+      background: #fee2e2;
+      border-color: #ef4444;
+    }
+    #message {
+      min-height: 24px;
+      text-align: center;
+      font-size: 0.95rem;
+      margin-bottom: 10px;
+    }
+    #message.correct { color: #16a34a; }
+    #message.wrong { color: #dc2626; }
+    #next-btn {
+      width: 100%;
+      padding: 10px;
+      border-radius: 12px;
+      border: none;
+      background: #4f46e5;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    @media (max-width: 640px) {
+      .game-container {
+        margin: 16px;
+        padding: 18px;
+      }
+      .option-btn {
+        flex: 1 1 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <h1>서울대 한국어 3B – 10·11·12과 단어 카드게임</h1>
+    <div class="subtitle">
+      출제 방향을 선택하고, 보기 중에서 알맞은 단어를 고르세요. (단원 구분 없이 섞어서 출제)
+    </div>
+
+    <div class="top-controls">
+      <div class="direction">
+        <span class="label">출제 방향</span>
+        <label>
+          <input type="radio" name="direction" value="vi2ko" checked>
+          베트남어 → 한국어
+        </label>
+        <label>
+          <input type="radio" name="direction" value="ko2vi">
+          한국어 → 베트남어
+        </label>
+      </div>
+      <div>단어 수: <span id="word-count">0</span>개</div>
+    </div>
+
+    <div class="status-bar">
+      <span>문제: <span id="q-num">1</span></span>
+      <span>점수: <span id="score">0</span></span>
+    </div>
+
+    <div class="card">
+      <div class="lang-label" id="lang-label">베트남어 뜻</div>
+      <div class="question-text" id="q-text">단어</div>
+    </div>
+
+    <div id="options"></div>
+
+    <div id="message"></div>
+    <button id="next-btn">다음 문제</button>
+  </div>
+
+  <script>
+    // =========================
+    // 10과 연애와 결혼 (예시 세트 - 이전에 만들었던 것)
+    // =========================
+    const WORDS_10 = [
+      { korean: "소개팅하다", vietnamese: "đi xem mắt, gặp mặt làm quen" },
+      { korean: "첫눈에 반하다", vietnamese: "yêu từ cái nhìn đầu tiên" },
+      { korean: "사귀다", vietnamese: "hẹn hò, qua lại" },
+      { korean: "사랑에 빠지다", vietnamese: "rơi vào lưới tình" },
+      { korean: "고백하다", vietnamese: "thổ lộ, tỏ tình" },
+      { korean: "연애하다", vietnamese: "yêu, hẹn hò" },
+      { korean: "선보다", vietnamese: "xem mắt (kết hôn)" },
+      { korean: "청혼하다", vietnamese: "cầu hôn" },
+
+      { korean: "성격이 잘 맞다", vietnamese: "hợp tính cách" },
+      { korean: "마음이 잘 통하다", vietnamese: "rất hiểu nhau, hợp ý" },
+      { korean: "조건이 맞다", vietnamese: "hợp điều kiện" },
+      { korean: "매력이 있다", vietnamese: "có sức hút, quyến rũ" },
+      { korean: "인상이 좋다", vietnamese: "ấn tượng tốt" },
+      { korean: "마음씨가 착하다", vietnamese: "tốt bụng, hiền lành" },
+
+      { korean: "나란히 앉다", vietnamese: "ngồi cạnh nhau, ngồi thẳng hàng" },
+      { korean: "얼굴이 빨개지다", vietnamese: "mặt đỏ bừng" },
+      { korean: "손을 잡다", vietnamese: "nắm tay" },
+      { korean: "어깨에 기대다", vietnamese: "tựa vào vai" },
+      { korean: "가슴이 두근거리다", vietnamese: "tim đập thình thịch" },
+      { korean: "팔짱을 끼다", vietnamese: "khoác tay, khoanh tay" },
+
+      { korean: "신혼여행", vietnamese: "chuyến du lịch trăng mật" },
+      { korean: "중매결혼", vietnamese: "kết hôn qua mai mối" },
+      { korean: "연애결혼", vietnamese: "kết hôn vì yêu" },
+      { korean: "청첩장", vietnamese: "thiệp mời cưới" },
+      { korean: "예식장", vietnamese: "nhà hàng tiệc cưới" },
+      { korean: "신혼집", vietnamese: "nhà tân hôn" },
+      { korean: "신혼살림", vietnamese: "cuộc sống tân hôn" },
+
+      { korean: "연인", vietnamese: "người yêu" },
+      { korean: "배우자", vietnamese: "vợ hoặc chồng, bạn đời" },
+      { korean: "연상", vietnamese: "hơn tuổi" },
+      { korean: "연하", vietnamese: "kém tuổi" },
+      { korean: "짝사랑", vietnamese: "yêu đơn phương" },
+      { korean: "헤어지다", vietnamese: "chia tay" },
+
+      { korean: "영원하다", vietnamese: "vĩnh viễn, mãi mãi" },
+      { korean: "유통 기한", vietnamese: "hạn sử dụng" },
+      { korean: "사랑이 식다", vietnamese: "tình yêu nguội lạnh" },
+      { korean: "단계", vietnamese: "giai đoạn" },
+      { korean: "평생", vietnamese: "suốt đời" },
+      { korean: "함께하다", vietnamese: "cùng, đồng hành" },
+      { korean: "있는 그대로", vietnamese: "như vốn có, như nguyên trạng" },
+      { korean: "상대방", vietnamese: "đối phương" },
+      { korean: "화가 풀리다", vietnamese: "nguôi giận" }
+    ];
+
+    // =========================
+    // 11과 언제든지 일할 수 있어요 (추가 세트 – 대표 어휘)
+    // =========================
+    const WORDS_11 = [
+      { korean: "대리", vietnamese: "trợ lý, phó phòng" },
+      { korean: "신입사원", vietnamese: "nhân viên mới" },
+      { korean: "직장 상사", vietnamese: "cấp trên ở công ty" },
+      { korean: "동료", vietnamese: "đồng nghiệp" },
+      { korean: "부하 직원", vietnamese: "cấp dưới" },
+      { korean: "대기업", vietnamese: "tập đoàn lớn, công ty lớn" },
+      { korean: "중소기업", vietnamese: "doanh nghiệp vừa và nhỏ" },
+
+      { korean: "연봉이 높다", vietnamese: "lương năm cao" },
+      { korean: "승진 기회가 많다", vietnamese: "nhiều cơ hội thăng tiến" },
+      { korean: "출퇴근 시간이 자유롭다", vietnamese: "giờ đi làm tan làm linh hoạt" },
+      { korean: "휴가가 길다", vietnamese: "kỳ nghỉ dài" },
+
+      { korean: "아르바이트", vietnamese: "làm thêm, việc làm thêm" },
+      { korean: "근무 시간", vietnamese: "thời gian làm việc" },
+      { korean: "연령", vietnamese: "độ tuổi" },
+      { korean: "시급", vietnamese: "lương theo giờ" },
+      { korean: "업무", vietnamese: "công việc, nghiệp vụ" },
+      { korean: "성별", vietnamese: "giới tính" },
+
+      { korean: "성실하다", vietnamese: "chăm chỉ, trung thực, tận tâm" },
+      { korean: "꼼꼼하다", vietnamese: "tỉ mỉ, cẩn thận" },
+      { korean: "적극적이다", vietnamese: "tích cực, chủ động" },
+      { korean: "용모가 단정하다", vietnamese: "ngoại hình chỉnh tề" },
+
+      { korean: "채용 공고", vietnamese: "thông báo tuyển dụng" },
+      { korean: "지원하다", vietnamese: "ứng tuyển" },
+      { korean: "지원자", vietnamese: "người ứng tuyển" },
+      { korean: "이력서", vietnamese: "sơ yếu lý lịch" },
+      { korean: "자기소개서", vietnamese: "bản tự giới thiệu" },
+      { korean: "경력", vietnamese: "kinh nghiệm làm việc" },
+      { korean: "경험", vietnamese: "kinh nghiệm" },
+
+      { korean: "정규직", vietnamese: "nhân viên chính thức" },
+      { korean: "계약직", vietnamese: "nhân viên hợp đồng" },
+      { korean: "아르바이트생", vietnamese: "nhân viên làm thêm" },
+
+      { korean: "회사를 그만두다", vietnamese: "nghỉ việc, thôi việc" },
+      { korean: "이직하다", vietnamese: "chuyển việc" },
+      { korean: "취업하다", vietnamese: "có việc làm, tìm được việc" },
+
+      { korean: "회식", vietnamese: "liên hoan công ty, ăn uống với đồng nghiệp" },
+      { korean: "실은", vietnamese: "thực ra, thật ra" },
+      { korean: "장화", vietnamese: "ủng, giày ống" },
+      { korean: "놀이터", vietnamese: "sân chơi" },
+      { korean: "그네", vietnamese: "xích đu" },
+      { korean: "파스", vietnamese: "cao dán, miếng dán giảm đau" }
+    ];
+
+    // =========================
+    // 12과 운동을 하면 몸과 마음이 모두 건강해져요 (추가 세트 – 대표 어휘)
+    // =========================
+    const WORDS_12 = [
+      { korean: "살이 찌다", vietnamese: "tăng cân" },
+      { korean: "살이 빠지다", vietnamese: "giảm cân" },
+      { korean: "힘이 세다", vietnamese: "khỏe, khỏe mạnh" },
+      { korean: "힘이 약하다", vietnamese: "yếu" },
+      { korean: "자세가 좋다", vietnamese: "tư thế tốt" },
+      { korean: "자세가 나쁘다", vietnamese: "tư thế xấu" },
+      { korean: "몸이 무겁다", vietnamese: "người nặng nề, uể oải" },
+      { korean: "몸이 가볍다", vietnamese: "người nhẹ nhàng, khỏe khoắn" },
+
+      { korean: "(목을) 돌리다", vietnamese: "xoay cổ" },
+      { korean: "(가슴을) 펴다", vietnamese: "ưỡn ngực, mở ngực" },
+      { korean: "(손을 허리에) 대다", vietnamese: "chống tay vào hông" },
+      { korean: "(다리를) 벌리다", vietnamese: "dang chân, dạng chân" },
+      { korean: "(옆구리를) 굽히다", vietnamese: "gập người sang bên, cúi sườn" },
+      { korean: "(몸을) 젖히다", vietnamese: "uốn người ra sau, ngửa người" },
+      { korean: "(팔을) 뻗다", vietnamese: "duỗi tay, vươn tay" },
+      { korean: "(발뒤꿈치를) 들다", vietnamese: "nhón gót chân" },
+
+      { korean: "숨이 차다", vietnamese: "thở dốc, hụt hơi" },
+      { korean: "땀이 나다", vietnamese: "đổ mồ hôi" },
+      { korean: "쥐가 나다", vietnamese: "bị chuột rút" },
+      { korean: "지치다", vietnamese: "mệt mỏi, kiệt sức" },
+
+      { korean: "근육", vietnamese: "cơ bắp" },
+      { korean: "체중", vietnamese: "cân nặng" },
+      { korean: "체력이 좋아지다", vietnamese: "thể lực tốt lên" },
+      { korean: "피로가 풀리다", vietnamese: "giải tỏa mệt mỏi" },
+      { korean: "스트레스가 풀리다", vietnamese: "giải tỏa căng thẳng" },
+
+      { korean: "근육통", vietnamese: "đau cơ" },
+      { korean: "몸살이 나다", vietnamese: "đau nhức toàn thân" },
+      { korean: "뻐근하다", vietnamese: "mỏi, ê ẩm" },
+
+      { korean: "유산소 운동", vietnamese: "tập thể dục aerobic, cardio" },
+      { korean: "근력 운동", vietnamese: "tập tăng cơ, tập tạ" },
+      { korean: "스트레칭", vietnamese: "duỗi người, kéo giãn cơ" },
+      { korean: "유연성", vietnamese: "độ dẻo dai" },
+      { korean: "자세를 교정하다", vietnamese: "sửa tư thế" },
+      { korean: "운동량", vietnamese: "lượng vận động" }
+    ];
+
+    // ===== 세 단원 합치기 =====
+    const WORDS = [...WORDS_10, ...WORDS_11, ...WORDS_12];
+
+    let current = 1;
+    let score = 0;
+    let answer = null;
+    let direction = "vi2ko"; // vi2ko or ko2vi
+
+    const qText = document.getElementById("q-text");
+    const langLabel = document.getElementById("lang-label");
+    const optionsEl = document.getElementById("options");
+    const messageEl = document.getElementById("message");
+    const qNumEl = document.getElementById("q-num");
+    const scoreEl = document.getElementById("score");
+    const wordCountEl = document.getElementById("word-count");
+
+    wordCountEl.textContent = WORDS.length;
+
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function newQuestion() {
+      messageEl.textContent = "";
+      messageEl.className = "";
+
+      const word = WORDS[Math.floor(Math.random() * WORDS.length)];
+
+      if (direction === "vi2ko") {
+        qText.textContent = word.vietnamese;
+        langLabel.textContent = "베트남어 뜻 → 한국어 단어를 고르세요";
+        answer = word.korean;
+      } else {
+        qText.textContent = word.korean;
+        langLabel.textContent = "한국어 단어 → 베트남어 뜻을 고르세요";
+        answer = word.vietnamese;
+      }
+
+      qNumEl.textContent = current;
+
+      const others = shuffle(
+        WORDS.filter(w =>
+          (direction === "vi2ko" ? w.korean : w.vietnamese) !== answer
+        )
+      ).slice(0, 3);
+
+      const choices = shuffle(
+        [
+          answer,
+          ...others.map(w => direction === "vi2ko" ? w.korean : w.vietnamese)
+        ]
+      );
+
+      optionsEl.innerHTML = "";
+      choices.forEach(choice => {
+        const btn = document.createElement("button");
+        btn.className = "option-btn";
+        btn.textContent = choice;
+        btn.onclick = () => check(choice, btn);
+        optionsEl.appendChild(btn);
+      });
+    }
+
+    function check(choice, btn) {
+      const buttons = document.querySelectorAll(".option-btn");
+      buttons.forEach(b => {
+        b.disabled = true;
+        if (b.textContent === answer) b.classList.add("correct");
+      });
+
+      if (choice === answer) {
+        messageEl.textContent = "정답입니다! 😊";
+        messageEl.className = "correct";
+        score++;
+        scoreEl.textContent = score;
+      } else {
+        messageEl.textContent = "오답입니다! 다시 도전해 보세요. 😢";
+        messageEl.className = "wrong";
+        btn.classList.add("wrong");
+      }
+    }
+
+    document.getElementById("next-btn").onclick = () => {
+      current++;
+      newQuestion();
+    };
+
+    // 방향 선택 라디오 버튼
+    document.querySelectorAll('input[name="direction"]').forEach(radio => {
+      radio.addEventListener("change", e => {
+        direction = e.target.value;
+        current = 1;
+        score = 0;
+        scoreEl.textContent = score;
+        newQuestion();
+      });
+    });
+
+    // 첫 문제 시작
+    newQuestion();
+  </script>
+</body>
+</html>
